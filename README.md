@@ -1,4 +1,4 @@
-# 03 – GC Scanner: FASTA Composition Profiling (Beginner)
+# ⚛️ GC Scanner: FASTA Composition Profiling
 
 A small, reproducible exercise that:
 1) merges multiple FASTA files into a single **multifasta**,
