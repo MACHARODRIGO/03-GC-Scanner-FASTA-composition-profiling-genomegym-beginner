@@ -4,6 +4,7 @@ from Bio import SeqIO
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import numpy as np
 
 
 # Paths
@@ -85,47 +86,42 @@ def analyze_sequences(fasta_file):
     return pd.DataFrame(stats_rows), pd.DataFrame(meta_rows)
 
 def plot_summary(stats_df, results_dir):
-    """Create a vertical combined figure with sequence length and GC% per gene, with consistent colors and legend."""
-    # Paleta de colores (tab10 tiene hasta 10 distintos)
-    colors = cm.tab10.colors
-    gene_colors = {gene: colors[i % len(colors)] for i, gene in enumerate(stats_df["Name"])}
+    """Create a vertical combined figure with sequence length and GC% per gene."""
+    if stats_df.empty:
+        print("Warning: No data to plot.")
+        return
 
-    fig, axes = plt.subplots(2, 1, figsize=(8, 8))
+    # Use a consistent, accessible color palette
+    colors = plt.cm.get_cmap("viridis")(np.linspace(0, 1, len(stats_df)))
+
+    fig, axes = plt.subplots(2, 1, figsize=(8, 10))
 
     # --- Panel A: Length per gene ---
-    bars = axes[0].bar(stats_df["Name"],
-                       stats_df["Length_bp"],
-                       color=[gene_colors[name] for name in stats_df["Name"]],
-                       edgecolor="black")
-    axes[0].set_xlabel("Gene")
-    axes[0].set_ylabel("Length (bp)")
-    axes[0].set_title("Sequence length per gene")
-    axes[0].tick_params(axis="x", rotation=45)
-
-    for bar in bars:
+    ax_length = axes[0]
+    bars1 = ax_length.bar(stats_df["Name"], stats_df["Length_bp"], color=colors, edgecolor="black")
+    ax_length.set_xlabel("Gene", fontsize=12)
+    ax_length.set_ylabel("Length (bp)", fontsize=12)
+    ax_length.set_title("Sequence length per gene", fontsize=14, fontweight="bold")
+    ax_length.tick_params(axis="x", rotation=45)
+    for bar in bars1:
         height = bar.get_height()
-        axes[0].text(bar.get_x() + bar.get_width()/2, height + 20,
-                     f"{height}", ha="center", va="bottom", fontsize=8)
+        ax_length.text(bar.get_x() + bar.get_width()/2, height + 20, f"{int(height)}", ha="center", va="bottom", fontsize=10)
 
     # --- Panel B: GC% per gene ---
-    bars2 = axes[1].bar(stats_df["Name"],
-                        stats_df["GC_percent"],
-                        color=[gene_colors[name] for name in stats_df["Name"]],
-                        edgecolor="black")
-    axes[1].set_xlabel("Gene")
-    axes[1].set_ylabel("GC%")
-    axes[1].set_title("GC content per gene")
-    axes[1].tick_params(axis="x", rotation=45)
-
+    ax_gc = axes[1]
+    bars2 = ax_gc.bar(stats_df["Name"], stats_df["GC_percent"], color=colors, edgecolor="black")
+    ax_gc.set_xlabel("Gene", fontsize=12)
+    ax_gc.set_ylabel("GC%", fontsize=12)
+    ax_gc.set_title("GC content per gene", fontsize=14, fontweight="bold")
+    ax_gc.tick_params(axis="x", rotation=45)
     for bar in bars2:
         height = bar.get_height()
-        axes[1].text(bar.get_x() + bar.get_width()/2, height + 1,
-                     f"{height:.2f}", ha="center", va="bottom", fontsize=8)
+        ax_gc.text(bar.get_x() + bar.get_width()/2, height + 1, f"{height:.2f}", ha="center", va="bottom", fontsize=10)
 
-
+    fig.tight_layout()
     outfile = os.path.join(results_dir, "summary_plots.png")
     plt.savefig(outfile, dpi=300)
-    plt.close()
+    plt.close(fig)
     print(f"Combined plot saved to {outfile}")
 
 def main():
