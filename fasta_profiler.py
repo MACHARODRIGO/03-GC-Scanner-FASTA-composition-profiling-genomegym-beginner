@@ -1,9 +1,7 @@
-import os
-import re
+import os, re, argparse, glob
 from Bio import SeqIO
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import numpy as np
 
 
@@ -12,17 +10,20 @@ data_dir = "data"
 results_dir = "results"
 os.makedirs(results_dir, exist_ok=True)
 
-multifasta = os.path.join(results_dir, "combined_sequences.fasta")
-stats_csv = os.path.join(results_dir, "sequence_stats.csv")
-meta_csv = os.path.join(results_dir, "metadata.csv")
-
-def combine_fastas(input_folder, output_file):
+def combine_fastas(input_folder, output_file, file_pattern="*.fasta"):
     """Combine individual FASTA files into a single multifasta."""
+    file_list = sorted(glob.glob(os.path.join(input_folder, file_pattern)))
+    if not file_list:
+        print(f"Warning: no files matching {file_pattern} in {input_folder}")
+        return False
     records = []
-    for fname in os.listdir(input_folder):
-        if fname.endswith(".fasta"):
-            records += list(SeqIO.parse(os.path.join(input_folder, fname), "fasta"))
+    for fname in file_list:
+        records += list(SeqIO.parse(fname, "fasta"))
+    if not records:
+        print("Warning: no valid FASTA records found.")
+        return False
     SeqIO.write(records, output_file, "fasta")
+    return True
 
 def parse_header_fields(record):
     """
@@ -92,7 +93,7 @@ def plot_summary(stats_df, results_dir):
         return
 
     # Use a consistent, accessible color palette
-    colors = plt.cm.get_cmap("viridis")(np.linspace(0, 1, len(stats_df)))
+    colors = plt.get_cmap("viridis")(np.linspace(0, 1, len(stats_df)))
 
     fig, axes = plt.subplots(2, 1, figsize=(8, 10))
 
@@ -124,30 +125,30 @@ def plot_summary(stats_df, results_dir):
     plt.close(fig)
     print(f"Combined plot saved to {outfile}")
 
-def main():
-    # 1) Combinar multifasta
-    combine_fastas(data_dir, multifasta)
+def main(input_dir, output_dir, pattern):
+    os.makedirs(output_dir, exist_ok=True)
+    multifasta = os.path.join(output_dir, "combined_sequences.fasta")
+    stats_csv  = os.path.join(output_dir, "sequence_stats.csv")
+    meta_csv   = os.path.join(output_dir, "metadata.csv")
 
-    # 2) Analizar secuencias
+    ok = combine_fastas(input_dir, multifasta, pattern)
+    if not ok:
+        return 1
+
     stats_df, meta_df = analyze_sequences(multifasta)
-
-    # 3) Guardar outputs
     stats_df.to_csv(stats_csv, index=False)
     meta_df.to_csv(meta_csv, index=False)
-
     print(f"Saved stats to {stats_csv}")
     print(f"Saved metadata to {meta_csv}")
-
-    # 4) Generar gráficos combinados
-    plot_summary(stats_df, results_dir)
-
-    # ✅ Preview en consola
-    print("\n--- Stats Preview ---")
-    print(stats_df.head())
-    print("\n--- Metadata Preview ---")
-    print(meta_df.head())
+    plot_summary(stats_df, output_dir)
+    print("\n--- Stats Preview ---"); print(stats_df.head())
+    print("\n--- Metadata Preview ---"); print(meta_df.head())
+    return 0
 
 if __name__ == "__main__":
-    main() # This ensures the script runs when executed directly
-# If imported, the main() function won't run automatically.
-
+    parser = argparse.ArgumentParser(description="GC scanner: combine FASTAs, compute counts/GC, and plot.")
+    parser.add_argument("--input", "-i", default="data", help="Input folder with FASTA files")
+    parser.add_argument("--output", "-o", default="results", help="Output folder")
+    parser.add_argument("--pattern", "-p", default="*.fasta", help="Glob pattern for input files (e.g. '*.fa')")
+    args = parser.parse_args()
+    raise SystemExit(main(args.input, args.output, args.pattern))
