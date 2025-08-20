@@ -58,10 +58,13 @@ They vary in length and function — useful for testing your GC scanner and visu
     - Download the example FASTA files from the links in the "Reference Sequences" table and save them inside the `data/` folder.
     - **Note:** Ensure the filenames end with `.fasta` (e.g., `HBB.fasta`).
 3.  **Run the script:**
+    - Use the command-line arguments to specify your input and output directories.
+    - The --input flag defaults to data, --output defaults to results, and --pattern defaults to *.fasta.
+    - 
     ```bash
-    python gc_scanner.py
+     python fasta_profiler.py --input data --output results --pattern "*.fasta"
     ```
-4.  **Explore the results:**
+5.  **Explore the results:**
     - The script will create a `results/` directory containing:
       - `combined_sequences.fasta`
       - `sequence_stats.csv`
@@ -91,7 +94,6 @@ NM_018947.6,CYCS,mRNA,"Homo sapiens cytochrome c, somatic"
 ## 💡 Next Steps & Community Challenges
 
 * **Error Handling:** Modify the `analyze_sequences` function to handle sequences with characters other than A, T, C, G (e.g., N for unknown bases). You could print a warning or skip the sequence.
-* **Command-Line Interface:** Use the `argparse` module to make the script more flexible, allowing users to specify input and output directories directly from the command line.
 * **Advanced Visualization:** Add a third subplot to `plot_summary` that shows the A/T ratio or a stacked bar chart of all nucleotide counts.
 * **Batch Processing:** Adapt the script to handle a large number of FASTA files more efficiently, perhaps by using `os.walk` to traverse a directory tree.
 * **Testing:** Write unit tests for the functions, especially `parse_header_fields` and `analyze_sequences`, to ensure they work correctly with different inputs.
